@@ -51,7 +51,7 @@ def getMyPageData():
         pageClicks.append(one.get_text().split()[0])
         totalClicks = totalClicks + int(one.get_text().split()[0])
 
-
+    #print("总计阅读量：" + str(totalClicks))
     print("总计阅读量：" + str(totalClicks))
 
 
