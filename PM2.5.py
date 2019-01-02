@@ -382,8 +382,32 @@ def updateNow():
     db.close()
 
 
-valPM25Day(150,"2018-01-01")
+"""
+优：0~50
+良：51~100
+轻度污染：101~150
+中度污染：151~200
+重度污染：201~300
+严重污染：大于300及以上
+"""
+def levelTraslate(PM):
+    level = ""
+    if PM < 50:
+        level = "优"
+    elif PM < 100:
+        level = "良"
+    elif PM < 150:
+        level = "轻度污染"
+    elif PM < 300:
+        level = "重度污染"
+    elif PM >= 300:
+        level = "严重污染"
+    print(level)
 
+valPM25Day(100,"2018-01-01")
+levelTraslate(300)
+
+#updateNow()
 
 
 
