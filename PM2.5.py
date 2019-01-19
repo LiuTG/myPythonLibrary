@@ -11,6 +11,7 @@ import matplotlib.dates as mdate
 from pylab import *
 from datetime import datetime, timedelta
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+from pyecharts import Bar,Line
 
 import time
 import datetime
@@ -85,7 +86,7 @@ def insertMysql(date,pm25,city,startDate,endDate):
             if date[index] >= startDate and date[index] <= endDate:
                 # SQL 插入语句
                 sql = "insert into weather(wdate,pm25,city) values ('%s','%s','%s');" %(date[index],pm25[index],city)
-
+                print(sql)
                 try:
                     # 执行sql语句
                     cursor.execute(sql)
@@ -138,82 +139,108 @@ def getPM25(startDate,endDate):
     # 输入参数合法性校验，比较是否输入的时间大于当前时间
     # python中字符串的大小比较，是按照字符顺序，从前往后依次比较字符的ASCII数值，例如‘abc’要小于‘abd’。因此，时间字符串也可以直接比大小。
     nowDate = time.strftime("%Y-%m-%d", time.localtime())
-    if startDate > nowDate or endDate > nowDate:
-        print(nowDate)
+    if startDate < nowDate or endDate > nowDate:
+        # 从中提取年份，月份
+        startYear = startDate[0:4]
+        endYear = endDate[0:4]
 
-    # 从中提取年份，月份
-    startYear = startDate[0:4]
-    endYear = endDate[0:4]
+        startMonth = startDate[5:7]
+        endMonth = endDate[5:7]
 
-    startMonth = startDate[5:7]
-    endMonth = endDate[5:7]
+        startDay = startDate[8:10]
+        endDay = endDate[8:10]
 
-    # 将01的月份转换为1
-    if startMonth[0:1] == '0':
-        startMonth = startMonth[1:2]
+        # 将01的月份转换为1
+        if startMonth[0:1] == '0':
+            startMonth = startMonth[1:2]
 
-    if endMonth[0:1] == '0':
-        endMonth = endMonth[1:2]
+        if endMonth[0:1] == '0':
+            endMonth = endMonth[1:2]
+
+        # 将01转换为1
+        if startDay[0:1] == '0':
+            startDay = startDay[1:2]
+
+        if endMonth[0:1] == '0':
+            endDay = endDay[1:2]
+
+        yearIndex = int(startYear)
+        urlYear = startYear
+
+        # index从当前时间开始，作为循环多少次的判定
+        index = int(startMonth)
+        #作为月的模运算
+        indexMonth = int(startMonth)
+        #print(int(endMonth)+12*(int(endYear)-int(startYear)))
+        # 小于几代表循环多少次，例如数据库最新为18年12月，今天为19年1月，循环次数为：（19-18）*12+1-12，两次（0,1）
+        while index <= (int(endMonth)+12*(int(endYear)-int(startYear))):
+            #大多数网站采取了异步返回的方式，所以不能直接爬网站而是要直接调接口
+            #上海，西安，北京，杭州
+            #将年月分开，从而方便进行日期选择
+
+            #当结束年份大于起始年份的，因为之前判断过起始日期必须小于结束日期，所以如果结束年份不大于起始年份时，只可能为相同年份下月份不同或同月不同日
+            #if endYear > startYear:
 
 
-    # index从1开始
-    index = int(startMonth)
-    # 小于几代表抓取到该年几月分的值
-    while index <= int(endMonth):
-        #大多数网站采取了异步返回的方式，所以不能直接爬网站而是要直接调接口
-        #上海，西安，北京，杭州
-        #将年月分开，从而方便进行日期选择
-
-        #当结束年份大于起始年份的，因为之前判断过起始日期必须小于结束日期，所以如果结束年份不大于起始年份时，只可能为相同年份下月份不同或同月不同日
-        #if endYear > startYear:
-
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!暂时不支持跨年抓数据!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        urlYear = startDate[0:4]
-        #由于月份从1开始所以位置指示器index从1开始，00为占0位用
-        urlMonth = ['00','01','02','03','04','05','06','07','08','09','10','11','12']
-        shUrl = 'http://tianqi.2345.com/t/wea_history/js/' + urlYear + urlMonth[index] + '/58362_' + urlYear + urlMonth[index] + '.js'
-        xaUrl = 'http://tianqi.2345.com/t/wea_history/js/' + urlYear + urlMonth[index] + '/57036_' + urlYear + urlMonth[index] + '.js'
-        bjUrl = 'http://tianqi.2345.com/t/wea_history/js/' + urlYear + urlMonth[index] + '/54511_' + urlYear + urlMonth[index] + '.js'
-        hzUrl = 'http://tianqi.2345.com/t/wea_history/js/' + urlYear + urlMonth[index] + '/58457_' + urlYear + urlMonth[index] + '.js'
+            #由于月份从1开始所以位置指示器index从1开始，00为占0位用
+            urlMonth = ['00','01','02','03','04','05','06','07','08','09','10','11','12']
+            shUrl = 'http://tianqi.2345.com/t/wea_history/js/' + urlYear + urlMonth[indexMonth] + '/58362_' + urlYear + urlMonth[indexMonth] + '.js'
+            xaUrl = 'http://tianqi.2345.com/t/wea_history/js/' + urlYear + urlMonth[indexMonth] + '/57036_' + urlYear + urlMonth[indexMonth] + '.js'
+            bjUrl = 'http://tianqi.2345.com/t/wea_history/js/' + urlYear + urlMonth[indexMonth] + '/54511_' + urlYear + urlMonth[indexMonth] + '.js'
+            hzUrl = 'http://tianqi.2345.com/t/wea_history/js/' + urlYear + urlMonth[indexMonth] + '/58457_' + urlYear + urlMonth[indexMonth] + '.js'
 
 
 
-        #创建城市URL数组
-        cityUrl = [shUrl,xaUrl,bjUrl,hzUrl]
-        city = ['sh','xa','bj','hz']
+            #创建城市URL数组
+            cityUrl = [shUrl,xaUrl,bjUrl,hzUrl]
+            city = ['sh','xa','bj','hz']
 
-        header_info = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:43.0) Gecko/20100101 Firefox/43.0',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
-            'Accept-Encoding': 'gzip, deflate',
-            'Referer': 'http://www.baidu.com',
-            'Connection': 'keep-alive',
-            'Cache-Control': 'max-age=0',
-        }
+            header_info = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:43.0) Gecko/20100101 Firefox/43.0',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+                'Accept-Encoding': 'gzip, deflate',
+                'Referer': 'http://www.baidu.com',
+                'Connection': 'keep-alive',
+                'Cache-Control': 'max-age=0',
+            }
 
-        cityIndex = 0
-        while cityIndex < 4:
-            #r为返回的对象，r.text为返回的正文
-            r = requests.get(cityUrl[cityIndex],headers=header_info)
-            #print(cityUrl[cityIndex])
+            cityIndex = 0
+            while cityIndex < 4:
+                #r为返回的对象，r.text为返回的正文
+                r = requests.get(cityUrl[cityIndex],headers=header_info)
+                print(cityUrl[cityIndex])
 
-            if r.status_code == 200 :
-                #匹配并提取aqi:'97'中的97
-                apiPattern = re.compile(r"aqi:\'(\d+)\'")
-                #匹配日期，格式为：2018-08-07
-                datePattern = re.compile(r'\d{4}-\d{2}-\d{2}')
+                if r.status_code == 200 :
+                    #匹配并提取aqi:'97'中的97
+                    apiPattern = re.compile(r"aqi:\'(\d+)\'")
+                    #匹配日期，格式为：2018-08-07
+                    datePattern = re.compile(r'\d{4}-\d{2}-\d{2}')
 
-                #先判断日期是否为在这区间内的是的话再去匹配污染物，在区间的话存入数据库
-                dateResult = datePattern.findall(r.text)
-                aqiResult = apiPattern.findall(r.text)
+                    #先判断日期是否为在这区间内的是的话再去匹配污染物，在区间的话存入数据库
+                    #date中最后两个日期为无效数据
+                    dateResult = datePattern.findall(r.text)
+                    aqiResult = apiPattern.findall(r.text)
 
-                insertMysql(dateResult,aqiResult,city[cityIndex],startDate,endDate)
-                #print(aqiResult,dateResult)
 
-            #循环控制位加1
-            cityIndex = cityIndex + 1
-        index = index + 1
+                    insertMysql(dateResult,aqiResult,city[cityIndex],startDate,endDate)
+                    #print(len(aqiResult),len(dateResult))
+
+                #循环控制位加1
+                cityIndex = cityIndex + 1
+            # 月循环控制位加1,当为12时，返回至1
+            if indexMonth == 12:
+                indexMonth = 1
+                # 年循环控制位加1
+                urlYear = str(yearIndex + 1)
+                index = index + 1
+            else:
+                indexMonth = indexMonth + 1
+                index = index + 1
+    else:
+        print("已同步至最新日期数据！")
+
+
 
 
 
@@ -347,7 +374,7 @@ def maxPM25Day():
 
 
 #实时更新到当天天气
-#暂时不支持跨年抓数据（getPM25不支持）
+
 def updateNow():
     # 打开数据库连接
     db = pymysql.connect("localhost", "root", "", "python")
@@ -404,10 +431,46 @@ def levelTraslate(PM):
         level = "严重污染"
     print(level)
 
-valPM25Day(100,"2018-01-01")
-levelTraslate(300)
+#折线图生成
+bjResult = selectMysql("bj","2018-01-01")
+shResult = selectMysql("sh","2018-01-01")
+hzResult = selectMysql("hz","2018-01-01")
+xaResult = selectMysql("xa","2018-01-01")
+date = []
+bjPM25 = []
+shPM25 = []
+hzPM25 = []
+xaPM25 = []
 
-#updateNow()
+for row in bjResult:
+    #第2列代表日期
+    date.append(row[1])
+    #第3列代表PM2.5
+    bjPM25.append(int(row[2]))
+
+for row in hzResult:
+    #第3列代表PM2.5
+    hzPM25.append(int(row[2]))
+
+
+for row in xaResult:
+    #第3列代表PM2.5
+    xaPM25.append(int(row[2]))
+
+for row in shResult:
+    #第3列代表PM2.5
+    shPM25.append(int(row[2]))
+
+PM251 = [63,2,43,123,2,42]
+line = Line("PM2.5变化折线图", '2018-4-16', width=1200, height=600)
+#line.add("北京", date, bjPM25, mark_point=['average'],is_smooth=True)# is_datazoom_show=True)
+line.add("上海", date, shPM25, mark_line=['average'], is_smooth=True)
+#line.add("西安", date, xaPM25, mark_line=['average'], is_smooth=True)
+#line.add("杭州", date, hzPM25, mark_line=['average'], is_smooth=True)
+
+line.render('Line-High-Low.html')
+
+
 
 
 
